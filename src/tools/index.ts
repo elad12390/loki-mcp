@@ -8,6 +8,8 @@ import { showMetricsTool, handleShowMetrics } from "./show-metrics.js";
 import { countErrorsTool, handleCountErrors } from "./count-errors.js";
 import { getContextTool, handleGetContext } from "./get-context.js";
 import { tailLogsTool, handleTailLogs } from "./tail-logs.js";
+import { extractFieldTool, handleExtractField } from "./extract-field.js";
+import { patternAnalysisTool, handlePatternAnalysis } from "./pattern-analysis.js";
 
 export const tools: Tool[] = [
   discoverLabelsTool,
@@ -19,6 +21,8 @@ export const tools: Tool[] = [
   countErrorsTool,
   getContextTool,
   tailLogsTool,
+  extractFieldTool,
+  patternAnalysisTool,
 ];
 
 export const handlers: Record<string, (args: any) => Promise<any>> = {
@@ -31,4 +35,6 @@ export const handlers: Record<string, (args: any) => Promise<any>> = {
   [countErrorsTool.name]: handleCountErrors,
   [getContextTool.name]: handleGetContext,
   [tailLogsTool.name]: handleTailLogs,
+  [extractFieldTool.name]: handleExtractField,
+  [patternAnalysisTool.name]: handlePatternAnalysis,
 };
