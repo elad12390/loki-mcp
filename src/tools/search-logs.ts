@@ -18,8 +18,8 @@ export const searchLogsTool: Tool = {
       },
       time_window: { 
         type: "string", 
-        description: "How far back to search. Format: '1h', '30m', '1d'. Default: '1h'",
-        pattern: "^\\d+[smhd]$"
+        description: "How far back to search. Examples: '1h', '30m', '1d'. You can also use '6h' to mean 'last 6 hours'. Default: '1h'",
+        // Removed strict pattern to allow more flexible input that the client now handles
       },
       limit: { 
         type: "number", 
@@ -49,7 +49,14 @@ export async function handleSearchLogs(args: any) {
   const formattedLogs = logs.map((l: any) => {
     // Convert ns timestamp to readable date
     const date = new Date(parseInt(l.ts) / 1e6).toISOString();
-    return `[${date}] ${JSON.stringify(l.labels)}: ${l.line}`;
+    
+    // If l.line is an object (because we parsed it in the client), stringify it nicely
+    // If it's a string, use it as is
+    const lineContent = typeof l.line === 'object' 
+      ? JSON.stringify(l.line, null, 0) // Compact JSON to save tokens but still be structured
+      : l.line;
+
+    return `[${date}] ${JSON.stringify(l.labels)}: ${lineContent}`;
   }).join("\n");
 
   return {

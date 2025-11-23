@@ -3,7 +3,9 @@ import { config } from "../config.js";
 
 // Simple time parser (e.g. "1h" -> ns)
 function parseDurationToNs(duration: string): number {
-  const match = duration.match(/^(\d+)([smhd])$/);
+  // Allow negative durations like "-6h" by stripping the minus
+  const cleanDuration = duration.replace(/^-/, '');
+  const match = cleanDuration.match(/^(\d+)([smhd])$/);
   if (!match) throw new Error("Invalid duration format. Use 1s, 5m, 1h, 24h, etc.");
   
   const value = parseInt(match[1]);
@@ -17,6 +19,14 @@ function parseDurationToNs(duration: string): number {
     case 'd': return value * 86400 * second;
     default: return 0;
   }
+}
+
+function tryParseJson(str: string): any {
+    try {
+        return JSON.parse(str);
+    } catch (e) {
+        return str;
+    }
 }
 
 export class LokiClient {
@@ -119,7 +129,7 @@ export class LokiClient {
           const labels = stream.stream;
           return stream.values.map((v: any) => ({
             ts: v[0],
-            line: v[1],
+            line: tryParseJson(v[1]),
             labels
           }));
         });
