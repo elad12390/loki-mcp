@@ -1,6 +1,6 @@
 {
   "name": "@elad12390/loki-mcp",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "An MCP server to easily search and retrieve logs from Grafana Loki",
   "main": "dist/index.js",
   "bin": {
