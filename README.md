@@ -9,8 +9,7 @@ You can run this server directly using `npx`:
 ```bash
 export LOKI_USERNAME="your-username"
 export LOKI_PASSWORD="your-password"
-# LOKI_URL defaults to https://prod-us-east-loki.solaraaidev.com, override if needed:
-# export LOKI_URL="https://your-loki-instance.com"
+export LOKI_URL="https://your-loki-instance.com"
 
 npx @elad12390/loki-mcp
 ```
@@ -40,7 +39,7 @@ e.g. `loki_get_label_values(label="app")` -> `["frontend", "backend", "payment"]
 ## Configuration
 
 Set the following environment variables:
-- `LOKI_URL`: URL of your Loki instance (default: `https://prod-us-east-loki.solaraaidev.com`)
+- `LOKI_URL`: URL of your Loki instance (default: `http://localhost:3100`)
 - `LOKI_USERNAME`: Basic Auth username (if required)
 - `LOKI_PASSWORD`: Basic Auth password (if required)
 

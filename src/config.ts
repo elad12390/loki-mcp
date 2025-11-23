@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const envSchema = z.object({
-  LOKI_URL: z.string().default("https://prod-us-east-loki.solaraaidev.com"),
+  LOKI_URL: z.string().default("http://localhost:3100"),
   LOKI_USERNAME: z.string().optional(),
   LOKI_PASSWORD: z.string().optional(),
 });
