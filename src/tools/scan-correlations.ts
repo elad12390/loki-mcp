@@ -3,7 +3,7 @@ import { lokiClient } from "../lib/loki-client.js";
 
 export const scanCorrelationsTool: Tool = {
   name: "loki_scan_correlations",
-  description: "Scans logs to find correlation IDs and associated message types (topics/routes). Helpful for tracing requests or understanding message flows.",
+  description: "Scans logs to find correlation IDs and associated message/request types. Helpful for tracing requests or understanding message flows.",
   inputSchema: {
     type: "object",
     properties: {
@@ -24,7 +24,7 @@ export const scanCorrelationsTool: Tool = {
       type_keys: {
         type: "array",
         items: { type: "string" },
-        description: "JSON keys to treat as message types. Default: ['topic', 'route', 'type', 'message_type']"
+        description: "JSON keys to treat as message/request types. Default: ['topic', 'route', 'type', 'message_type', 'request_type', 'method', 'action']"
       },
       limit: {
         type: "number",
@@ -46,7 +46,7 @@ export async function handleScanCorrelations(args: any) {
 
   const limit = params.limit || 500;
   const correlationKeys = params.correlation_keys || ['correlation_id', 'trace_id', 'request_id', 'correlationId', 'traceId', 'requestId'];
-  const typeKeys = params.type_keys || ['topic', 'route', 'type', 'message_type', 'eventType', 'event_type'];
+  const typeKeys = params.type_keys || ['topic', 'route', 'type', 'message_type', 'eventType', 'event_type', 'request_type', 'method', 'action', 'operation'];
 
   const logs = await lokiClient.searchLogs({
     selector: params.labels,
