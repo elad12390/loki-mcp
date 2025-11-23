@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const scanCorrelationsTool: Tool = {
   name: "loki_scan_correlations",
-  description: "Scans logs to find correlation IDs and associated message/request types. Helpful for tracing requests or understanding message flows.",
+  description: "🔗 Follow the breadcrumbs! Track requests as they flow through your system by finding correlation IDs (trace_id, request_id, etc.) and showing what happened at each step. Perfect for: understanding distributed transactions, seeing which services a request touched, or debugging message queues. I'll show you each correlation ID and all the event types associated with it.",
   inputSchema: {
     type: "object",
     properties: {

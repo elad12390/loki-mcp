@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const patternAnalysisTool: Tool = {
   name: "loki_pattern_analysis",
-  description: "Group logs into patterns by replacing dynamic content (IDs, numbers, timestamps) with placeholders. Shows most common error templates. Essential for understanding 'What types of errors are happening?' rather than individual instances.",
+  description: "🧩 See the forest, not just the trees! Instead of drowning in thousands of similar errors, I'll group them into patterns and show you what's really unique. I automatically strip out IDs, timestamps, and other noise to reveal the underlying error types. Perfect for: understanding incident scope, spotting new vs. recurring issues, or answering 'are these all the same problem?'",
   inputSchema: {
     type: "object",
     properties: {

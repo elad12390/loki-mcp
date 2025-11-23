@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const discoverLabelsTool: Tool = {
   name: "loki_discover_labels",
-  description: "List all available label names (metadata keys) in Loki. Use this to find out what you can filter by (e.g. 'app', 'namespace', 'cluster').",
+  description: "🗺️ New to this Loki instance? Let me show you around! I'll list all the labels (metadata keys) you can filter by. Think of labels as the 'columns' in your log database - things like app name, environment, cluster, etc. Use this first if you're not sure how logs are organized. Perfect for exploration and understanding your log structure.",
   inputSchema: {
     type: "object",
     properties: {

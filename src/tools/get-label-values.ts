@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const getLabelValuesTool: Tool = {
   name: "loki_get_label_values",
-  description: "Get all existing values for a specific label. Use this to see valid options for a filter (e.g. ask for 'app' to see all app names).",
+  description: "📋 What are my options? Once you know a label exists (like 'app' or 'environment'), use this to see all possible values for it. Want to know which apps are logging? Which environments exist? What clusters you have? I'll list them all. Great for discovering what services are deployed or double-checking the exact name before filtering.",
   inputSchema: {
     type: "object",
     properties: {

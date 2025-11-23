@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const extractFieldTool: Tool = {
   name: "loki_extract_field",
-  description: "Extract and analyze a specific field from structured logs (JSON/logfmt). Returns unique values, counts, or frequency distribution. Perfect for 'Show me all user_ids that hit this error' questions.",
+  description: "🎯 Turn your logs into actionable data! Pull out any field from your JSON/logfmt logs and see what's really going on. Want to know which users hit errors? Which API endpoints are slow? What status codes are most common? I'll extract the field, count occurrences, and show you the top values. Works with nested fields too (like 'error.message')!",
   inputSchema: {
     type: "object",
     properties: {

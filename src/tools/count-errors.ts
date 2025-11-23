@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const countErrorsTool: Tool = {
   name: "loki_count_errors",
-  description: "Count errors (or any pattern) over time. Returns a time-series of counts/rates instead of raw logs. Best for 'How many errors happened?' questions.",
+  description: "📊 Answer 'how many?' questions instantly! Instead of scrolling through thousands of log lines, get actual numbers and trends. Shows you error rates over time with a visual chart. Perfect for: checking if errors are increasing, comparing current vs. past rates, or validating that your fix reduced errors. Much smarter than counting logs manually!",
   inputSchema: {
     type: "object",
     properties: {

@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const searchLogsTool: Tool = {
   name: "loki_search_logs",
-  description: "Smart log search. The EASIEST way to find logs. Automatically handles stream selectors - just provide a search term to search all services/apps.",
+  description: "🔍 Your go-to tool for finding logs! Just tell me what you're looking for and I'll search across all your services. No need to know LogQL - I handle all the complexity. Perfect for: finding error messages, tracking down specific requests, or browsing recent activity. Works beautifully with partial text matches and supports pagination for large result sets.",
   inputSchema: {
     type: "object",
     properties: {

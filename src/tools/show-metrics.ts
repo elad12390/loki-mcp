@@ -3,7 +3,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const showMetricsTool: Tool = {
   name: "loki_show_metrics",
-  description: "Show usage statistics for Loki MCP tools. Displays how many times each tool was used and the reasoning provided.",
+  description: "📈 Meta-analysis time! Curious about your own debugging patterns? I'll show you which tools you use most often and why. Great for: understanding your workflow, identifying your most common debugging scenarios, or just satisfying curiosity. I track everything locally, so your usage patterns stay private on your machine.",
   inputSchema: {
     type: "object",
     properties: {
