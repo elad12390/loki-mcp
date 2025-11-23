@@ -3,18 +3,18 @@ import { lokiClient } from "../lib/loki-client.js";
 
 export const searchLogsTool: Tool = {
   name: "loki_search_logs",
-  description: "Easy mode log search. Fetch logs by filtering on labels and/or text content. Returns newest logs first.",
+  description: "Smart log search. The EASIEST way to find logs. Automatically handles stream selectors - just provide a search term to search all services/apps.",
   inputSchema: {
     type: "object",
     properties: {
       labels: { 
         type: "object", 
-        description: "Key-value pairs to filter logs. AT LEAST ONE is usually required by Loki. Example: {'app': 'payment-service', 'env': 'prod'}",
+        description: "Optional key-value pairs to filter logs. If omitted, the tool automatically finds the best label (like 'app' or 'service') to search ALL logs. Example: {'env': 'prod'}",
         additionalProperties: { type: "string" }
       },
       search_term: { 
         type: "string", 
-        description: "Text to search for within the log line (case-sensitive by default in simple mode). Example: 'Connection refused' or 'error'" 
+        description: "Text to search for (e.g. error message, trace ID). The tool will automatically search across all services if no labels are provided." 
       },
       time_window: { 
         type: "string", 

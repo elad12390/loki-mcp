@@ -45,6 +45,36 @@ export class LokiClient {
     return res.data.data;
   }
 
+  private cachedDefaultSelector: string | null = null;
+
+  async getDefaultSelector(): Promise<string> {
+    if (this.cachedDefaultSelector) return this.cachedDefaultSelector;
+
+    try {
+      const labels = await this.getLabels();
+      // Common high-cardinality/service-identifying labels
+      const priorities = ['app', 'service', 'service_name', 'job', 'application', 'container', 'component'];
+      
+      for (const p of priorities) {
+        if (labels.includes(p)) {
+          this.cachedDefaultSelector = `{${p}=~".+"}`;
+          return this.cachedDefaultSelector;
+        }
+      }
+      
+      // Fallback: pick the first available label if any exist
+      if (labels && labels.length > 0) {
+         this.cachedDefaultSelector = `{${labels[0]}=~".+"}`;
+         return this.cachedDefaultSelector;
+      }
+    } catch (e) {
+      console.error("Failed to fetch labels for default selector auto-detection:", e);
+    }
+    
+    // Ultimate fallback
+    return '{job=~".+"}';
+  }
+
   async searchLogs(params: {
     selector?: Record<string, string>;
     search?: string;
@@ -53,9 +83,15 @@ export class LokiClient {
   }) {
     const { selector = {}, search, limit = 100, startAgo = "1h" } = params;
 
-    const selectorParts = Object.entries(selector).map(([k, v]) => `${k}="${v}"`);
-    let query = selectorParts.length > 0 ? `{${selectorParts.join(", ")}}` : '{job=~".+"}';
+    let queryPart = "";
+    if (Object.keys(selector).length > 0) {
+      const selectorParts = Object.entries(selector).map(([k, v]) => `${k}="${v}"`);
+      queryPart = `{${selectorParts.join(", ")}}`;
+    } else {
+      queryPart = await this.getDefaultSelector();
+    }
 
+    let query = queryPart;
     if (search) {
       query += ` |= "${search}"`;
     }
