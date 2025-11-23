@@ -1,5 +1,6 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { lokiClient } from "../lib/loki-client.js";
+import { metrics } from "../lib/metrics.js";
 
 export const searchLogsTool: Tool = {
   name: "loki_search_logs",
@@ -7,6 +8,10 @@ export const searchLogsTool: Tool = {
   inputSchema: {
     type: "object",
     properties: {
+      reasoning: {
+        type: "string",
+        description: "Explanation of why you are using this tool and what you hope to find."
+      },
       labels: { 
         type: "object", 
         description: "Optional key-value pairs to filter logs. If omitted, the tool automatically finds the best label (like 'app' or 'service') to search ALL logs. Example: {'env': 'prod'}",
@@ -30,18 +35,21 @@ export const searchLogsTool: Tool = {
         description: "Optional timestamp (nanoseconds or ISO) to search before. Use this for pagination to get older logs."
       }
     },
-    required: [],
+    required: ["reasoning"],
   },
 };
 
 export async function handleSearchLogs(args: any) {
   const params = args as {
+    reasoning: string;
     labels?: Record<string, string>;
     search_term?: string;
     time_window?: string;
     limit?: number;
     end_time?: string;
   };
+
+  metrics.trackToolUsage(searchLogsTool.name, params.reasoning);
 
   const logs = await lokiClient.searchLogs({
     selector: params.labels,

@@ -1,5 +1,6 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { lokiClient } from "../lib/loki-client.js";
+import { metrics } from "../lib/metrics.js";
 
 export const scanCorrelationsTool: Tool = {
   name: "loki_scan_correlations",
@@ -7,6 +8,10 @@ export const scanCorrelationsTool: Tool = {
   inputSchema: {
     type: "object",
     properties: {
+      reasoning: {
+        type: "string",
+        description: "Explanation of why you are using this tool and what you hope to find."
+      },
       labels: {
         type: "object",
         description: "Optional key-value pairs to filter logs. Example: {'app': 'payment'}",
@@ -31,18 +36,21 @@ export const scanCorrelationsTool: Tool = {
         description: "Max logs to scan. Default: 500"
       }
     },
-    required: [],
+    required: ["reasoning"],
   },
 };
 
 export async function handleScanCorrelations(args: any) {
   const params = args as {
+    reasoning: string;
     labels?: Record<string, string>;
     time_window?: string;
     correlation_keys?: string[];
     type_keys?: string[];
     limit?: number;
   };
+  
+  metrics.trackToolUsage(scanCorrelationsTool.name, params.reasoning);
 
   const limit = params.limit || 500;
   const correlationKeys = params.correlation_keys || ['correlation_id', 'trace_id', 'request_id', 'correlationId', 'traceId', 'requestId'];

@@ -1,5 +1,6 @@
 import { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { lokiClient } from "../lib/loki-client.js";
+import { metrics } from "../lib/metrics.js";
 
 export const listServicesTool: Tool = {
   name: "loki_list_services",
@@ -7,14 +8,21 @@ export const listServicesTool: Tool = {
   inputSchema: {
     type: "object",
     properties: {
+      reasoning: {
+        type: "string",
+        description: "Explanation of why you are using this tool and what you hope to find."
+      },
       page: { type: "number", description: "Page number (default 1)" },
       page_size: { type: "number", description: "Number of items per page (default 100)" }
     },
+    required: ["reasoning"],
   },
 };
 
 export async function handleListServices(args: any) {
-  const { page = 1, page_size = 100 } = args as { page?: number; page_size?: number } || {};
+  const { reasoning, page = 1, page_size = 100 } = args as { reasoning: string; page?: number; page_size?: number };
+  
+  metrics.trackToolUsage(listServicesTool.name, reasoning);
 
   // Try common service labels
   const candidates = ['service_name', 'app', 'service', 'application'];

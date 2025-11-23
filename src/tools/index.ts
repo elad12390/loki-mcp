@@ -4,6 +4,7 @@ import { getLabelValuesTool, handleGetLabelValues } from "./get-label-values.js"
 import { searchLogsTool, handleSearchLogs } from "./search-logs.js";
 import { listServicesTool, handleListServices } from "./list-services.js";
 import { scanCorrelationsTool, handleScanCorrelations } from "./scan-correlations.js";
+import { showMetricsTool, handleShowMetrics } from "./show-metrics.js";
 
 export const tools: Tool[] = [
   discoverLabelsTool,
@@ -11,6 +12,7 @@ export const tools: Tool[] = [
   searchLogsTool,
   listServicesTool,
   scanCorrelationsTool,
+  showMetricsTool,
 ];
 
 export const handlers: Record<string, (args: any) => Promise<any>> = {
@@ -19,4 +21,5 @@ export const handlers: Record<string, (args: any) => Promise<any>> = {
   [searchLogsTool.name]: handleSearchLogs,
   [listServicesTool.name]: handleListServices,
   [scanCorrelationsTool.name]: handleScanCorrelations,
+  [showMetricsTool.name]: handleShowMetrics,
 };
