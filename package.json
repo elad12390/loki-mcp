@@ -1,0 +1,46 @@
+{
+  "name": "@elad12390/loki-mcp",
+  "version": "1.0.0",
+  "description": "An MCP server to easily search and retrieve logs from Grafana Loki",
+  "main": "dist/index.js",
+  "bin": {
+    "loki-mcp": "./dist/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc && chmod +x dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "mcp",
+    "loki",
+    "grafana",
+    "logs",
+    "ai",
+    "llm"
+  ],
+  "author": "Elad Ben Haim",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elad12390/loki-mcp.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.1",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
