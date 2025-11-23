@@ -24,6 +24,10 @@ export const searchLogsTool: Tool = {
       limit: { 
         type: "number", 
         description: "Max number of log lines to return. Default: 100" 
+      },
+      end_time: {
+        type: "string",
+        description: "Optional timestamp (nanoseconds or ISO) to search before. Use this for pagination to get older logs."
       }
     },
     required: [],
@@ -36,13 +40,15 @@ export async function handleSearchLogs(args: any) {
     search_term?: string;
     time_window?: string;
     limit?: number;
+    end_time?: string;
   };
 
   const logs = await lokiClient.searchLogs({
     selector: params.labels,
     search: params.search_term,
     startAgo: params.time_window,
-    limit: params.limit
+    limit: params.limit,
+    end: params.end_time
   });
 
   const MAX_LOG_LENGTH = 60000; // Limit total output to ~60k characters (roughly 15k tokens)
@@ -51,8 +57,12 @@ export async function handleSearchLogs(args: any) {
   let formattedLogs = "";
   let currentLength = 0;
   let truncated = false;
+  
+  // Track the oldest timestamp seen to provide a next page cursor
+  let oldestTimestamp = null;
 
   for (const l of logs) {
+    oldestTimestamp = l.ts;
     // Convert ns timestamp to readable date
     const date = new Date(parseInt(l.ts) / 1e6).toISOString();
     
@@ -77,6 +87,11 @@ export async function handleSearchLogs(args: any) {
 
     formattedLogs += (formattedLogs ? "\n" : "") + entry;
     currentLength += entryLength;
+  }
+  
+  if (logs.length > 0 && oldestTimestamp) {
+      // Suggest next page if we got results
+      formattedLogs += `\n\n---\nTo get older logs, run the command again with end_time="${oldestTimestamp}"`;
   }
 
   return {

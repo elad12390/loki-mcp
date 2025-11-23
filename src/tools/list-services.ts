@@ -6,11 +6,16 @@ export const listServicesTool: Tool = {
   description: "List all available services (values of the 'service_name' or 'app' label).",
   inputSchema: {
     type: "object",
-    properties: {},
+    properties: {
+      page: { type: "number", description: "Page number (default 1)" },
+      page_size: { type: "number", description: "Number of items per page (default 100)" }
+    },
   },
 };
 
-export async function handleListServices() {
+export async function handleListServices(args: any) {
+  const { page = 1, page_size = 100 } = args as { page?: number; page_size?: number } || {};
+
   // Try common service labels
   const candidates = ['service_name', 'app', 'service', 'application'];
   
@@ -26,12 +31,16 @@ export async function handleListServices() {
 
   const values = await lokiClient.getLabelValues(label);
   
-  let result = JSON.stringify(values, null, 2);
-  const MAX_LENGTH = 30000;
+  const start = (page - 1) * page_size;
+  const end = start + page_size;
+  const subset = values.slice(start, end);
   
-  if (result.length > MAX_LENGTH) {
-      const subset = values.slice(0, 100);
-      result = JSON.stringify(subset, null, 2) + `\n\n... (Output truncated. Showing first 100 of ${values.length} services)`;
+  let result = JSON.stringify(subset, null, 2);
+  
+  if (values.length > end) {
+      result += `\n\n(Showing items ${start + 1}-${end} of ${values.length}. To see more, run again with page=${page + 1})`;
+  } else if (start > 0) {
+      result += `\n\n(Showing items ${start + 1}-${Math.min(end, values.length)} of ${values.length})`;
   }
 
   return {

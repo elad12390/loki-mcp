@@ -6,19 +6,27 @@ export const discoverLabelsTool: Tool = {
   description: "List all available label names (metadata keys) in Loki. Use this to find out what you can filter by (e.g. 'app', 'namespace', 'cluster').",
   inputSchema: {
     type: "object",
-    properties: {},
+    properties: {
+      page: { type: "number", description: "Page number (default 1)" },
+      page_size: { type: "number", description: "Number of items per page (default 100)" }
+    },
   },
 };
 
-export async function handleDiscoverLabels() {
+export async function handleDiscoverLabels(args: any) {
+  const { page = 1, page_size = 100 } = args as { page?: number; page_size?: number } || {};
   const labels = await lokiClient.getLabels();
   
-  let result = JSON.stringify(labels, null, 2);
-  const MAX_LENGTH = 30000;
-
-  if (result.length > MAX_LENGTH) {
-    const subset = labels.slice(0, 100);
-    result = JSON.stringify(subset, null, 2) + `\n\n... (Output truncated. Showing first 100 of ${labels.length} labels)`;
+  const start = (page - 1) * page_size;
+  const end = start + page_size;
+  const subset = labels.slice(start, end);
+  
+  let result = JSON.stringify(subset, null, 2);
+  
+  if (labels.length > end) {
+      result += `\n\n(Showing items ${start + 1}-${end} of ${labels.length}. To see more, run again with page=${page + 1})`;
+  } else if (start > 0) {
+      result += `\n\n(Showing items ${start + 1}-${Math.min(end, labels.length)} of ${labels.length})`;
   }
 
   return {

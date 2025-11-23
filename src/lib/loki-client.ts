@@ -90,8 +90,9 @@ export class LokiClient {
     search?: string;
     limit?: number;
     startAgo?: string;
+    end?: string; // Optional end timestamp (ns) for pagination
   }) {
-    const { selector = {}, search, limit = 100, startAgo = "1h" } = params;
+    const { selector = {}, search, limit = 100, startAgo = "1h", end } = params;
 
     let queryPart = "";
     if (Object.keys(selector).length > 0) {
@@ -108,7 +109,10 @@ export class LokiClient {
 
     const now = Date.now() * 1e6; // ms to ns
     const startNs = now - parseDurationToNs(startAgo);
-
+    
+    // If 'end' is provided, use it. Otherwise, default to 'now' (implicit in Loki if omitted, but we can be explicit if we want)
+    // We don't default end to now here because we want to pass it through if provided
+    
     console.error(`Executing LogQL: ${query}`);
 
     try {
@@ -116,6 +120,7 @@ export class LokiClient {
         params: {
           query,
           start: startNs,
+          end: end, // Axios filters undefined values automatically
           limit,
           direction: 'BACKWARD'
         }

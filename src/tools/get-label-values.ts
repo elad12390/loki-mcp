@@ -8,22 +8,27 @@ export const getLabelValuesTool: Tool = {
     type: "object",
     properties: {
       label: { type: "string", description: "The label name to look up (e.g. 'app', 'job')" },
+      page: { type: "number", description: "Page number (default 1)" },
+      page_size: { type: "number", description: "Number of items per page (default 100)" }
     },
     required: ["label"],
   },
 };
 
 export async function handleGetLabelValues(args: any) {
-  const { label } = args as { label: string };
+  const { label, page = 1, page_size = 100 } = args as { label: string; page?: number; page_size?: number };
   const values = await lokiClient.getLabelValues(label);
   
-  let result = JSON.stringify(values, null, 2);
-  const MAX_LENGTH = 30000;
+  const start = (page - 1) * page_size;
+  const end = start + page_size;
+  const subset = values.slice(start, end);
   
-  if (result.length > MAX_LENGTH) {
-    // If it's too long, just return a subset of values
-    const subset = values.slice(0, 100);
-    result = JSON.stringify(subset, null, 2) + `\n\n... (Output truncated. Showing first 100 of ${values.length} values)`;
+  let result = JSON.stringify(subset, null, 2);
+  
+  if (values.length > end) {
+      result += `\n\n(Showing items ${start + 1}-${end} of ${values.length}. To see more, run again with page=${page + 1})`;
+  } else if (start > 0) {
+      result += `\n\n(Showing items ${start + 1}-${Math.min(end, values.length)} of ${values.length})`;
   }
 
   return {
