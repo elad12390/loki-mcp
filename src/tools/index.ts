@@ -5,6 +5,9 @@ import { searchLogsTool, handleSearchLogs } from "./search-logs.js";
 import { listServicesTool, handleListServices } from "./list-services.js";
 import { scanCorrelationsTool, handleScanCorrelations } from "./scan-correlations.js";
 import { showMetricsTool, handleShowMetrics } from "./show-metrics.js";
+import { countErrorsTool, handleCountErrors } from "./count-errors.js";
+import { getContextTool, handleGetContext } from "./get-context.js";
+import { tailLogsTool, handleTailLogs } from "./tail-logs.js";
 
 export const tools: Tool[] = [
   discoverLabelsTool,
@@ -13,6 +16,9 @@ export const tools: Tool[] = [
   listServicesTool,
   scanCorrelationsTool,
   showMetricsTool,
+  countErrorsTool,
+  getContextTool,
+  tailLogsTool,
 ];
 
 export const handlers: Record<string, (args: any) => Promise<any>> = {
@@ -22,4 +28,7 @@ export const handlers: Record<string, (args: any) => Promise<any>> = {
   [listServicesTool.name]: handleListServices,
   [scanCorrelationsTool.name]: handleScanCorrelations,
   [showMetricsTool.name]: handleShowMetrics,
+  [countErrorsTool.name]: handleCountErrors,
+  [getContextTool.name]: handleGetContext,
+  [tailLogsTool.name]: handleTailLogs,
 };

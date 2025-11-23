@@ -90,9 +90,11 @@ export class LokiClient {
     search?: string;
     limit?: number;
     startAgo?: string;
+    start?: string; // Optional start timestamp (ns) override
     end?: string; // Optional end timestamp (ns) for pagination
+    direction?: "BACKWARD" | "FORWARD";
   }) {
-    const { selector = {}, search, limit = 100, startAgo = "1h", end } = params;
+    const { selector = {}, search, limit = 100, startAgo = "1h", end, direction = "BACKWARD", start } = params;
 
     let queryPart = "";
     if (Object.keys(selector).length > 0) {
@@ -108,7 +110,12 @@ export class LokiClient {
     }
 
     const now = Date.now() * 1e6; // ms to ns
-    const startNs = now - parseDurationToNs(startAgo);
+    let startNs = now - parseDurationToNs(startAgo);
+    
+    // Explicit start overrides startAgo
+    if (start) {
+        startNs = parseInt(start);
+    }
     
     // If 'end' is provided, use it. Otherwise, default to 'now' (implicit in Loki if omitted, but we can be explicit if we want)
     // We don't default end to now here because we want to pass it through if provided
@@ -122,7 +129,7 @@ export class LokiClient {
           start: startNs,
           end: end, // Axios filters undefined values automatically
           limit,
-          direction: 'BACKWARD'
+          direction
         }
       });
       
@@ -140,6 +147,50 @@ export class LokiClient {
         });
       }
       return result;
+    } catch (error: any) {
+      if ((axios as any).isAxiosError(error)) {
+        throw new Error(`Loki API Error: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`);
+      }
+      throw error;
+    }
+  }
+
+  async queryMetric(query: string, startAgo: string = "1h", step: string = "60s") {
+    const now = Date.now() * 1e6;
+    const startNs = now - parseDurationToNs(startAgo);
+    
+    // Step is expected in seconds (usually) or duration string by Loki? 
+    // Loki API expects 'step' in seconds or duration string (e.g. '1m').
+    
+    console.error(`Executing Metric LogQL: ${query}`);
+
+    try {
+      const res = await this.client.get('/loki/api/v1/query_range', {
+        params: {
+          query,
+          start: startNs,
+          limit: 1000,
+          step: step 
+        }
+      });
+      
+      const resultType = res.data.data.resultType;
+      const result = res.data.data.result;
+
+      if (resultType === 'matrix') {
+        // Format: [{ metric: { labels... }, values: [[ts, val], ...] }]
+        return result.map((series: any) => ({
+          labels: series.metric,
+          values: series.values.map((v: any) => ({
+            ts: v[0],
+            value: parseFloat(v[1])
+          }))
+        }));
+      }
+      
+      // Fallback if they ran a non-metric query by mistake
+      return result;
+
     } catch (error: any) {
       if ((axios as any).isAxiosError(error)) {
         throw new Error(`Loki API Error: ${error.response?.status} - ${JSON.stringify(error.response?.data)}`);
