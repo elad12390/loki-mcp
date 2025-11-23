@@ -45,19 +45,39 @@ export async function handleSearchLogs(args: any) {
     limit: params.limit
   });
 
-  // Format logs nicely for the LLM
-  const formattedLogs = logs.map((l: any) => {
+  const MAX_LOG_LENGTH = 60000; // Limit total output to ~60k characters (roughly 15k tokens)
+  const MAX_LINE_LENGTH = 1000; // Limit single line to 1000 chars
+
+  let formattedLogs = "";
+  let currentLength = 0;
+  let truncated = false;
+
+  for (const l of logs) {
     // Convert ns timestamp to readable date
     const date = new Date(parseInt(l.ts) / 1e6).toISOString();
     
     // If l.line is an object (because we parsed it in the client), stringify it nicely
     // If it's a string, use it as is
-    const lineContent = typeof l.line === 'object' 
+    let lineContent = typeof l.line === 'object' 
       ? JSON.stringify(l.line, null, 0) // Compact JSON to save tokens but still be structured
       : l.line;
 
-    return `[${date}] ${JSON.stringify(l.labels)}: ${lineContent}`;
-  }).join("\n");
+    if (lineContent.length > MAX_LINE_LENGTH) {
+      lineContent = lineContent.substring(0, MAX_LINE_LENGTH) + "...(line truncated)";
+    }
+
+    const entry = `[${date}] ${JSON.stringify(l.labels)}: ${lineContent}`;
+    const entryLength = entry.length + 1; // +1 for newline
+
+    if (currentLength + entryLength > MAX_LOG_LENGTH) {
+      formattedLogs += "\n... (Response truncated due to size limit. Please refine your search or reduce time window)";
+      truncated = true;
+      break;
+    }
+
+    formattedLogs += (formattedLogs ? "\n" : "") + entry;
+    currentLength += entryLength;
+  }
 
   return {
     content: [{ type: "text", text: formattedLogs || "No logs found matching criteria." }],

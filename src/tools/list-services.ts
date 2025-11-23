@@ -25,7 +25,16 @@ export async function handleListServices() {
   }
 
   const values = await lokiClient.getLabelValues(label);
+  
+  let result = JSON.stringify(values, null, 2);
+  const MAX_LENGTH = 30000;
+  
+  if (result.length > MAX_LENGTH) {
+      const subset = values.slice(0, 100);
+      result = JSON.stringify(subset, null, 2) + `\n\n... (Output truncated. Showing first 100 of ${values.length} services)`;
+  }
+
   return {
-    content: [{ type: "text", text: JSON.stringify(values, null, 2) }],
+    content: [{ type: "text", text: result }],
   };
 }
