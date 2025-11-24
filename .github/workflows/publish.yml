@@ -9,11 +9,13 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Use Node.js
       uses: actions/setup-node@v4
@@ -26,6 +28,44 @@ jobs:
     
     - name: Build
       run: npm run build
+    
+    - name: Generate Changelog
+      id: changelog
+      run: |
+        # Get the previous tag
+        PREV_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+        CURRENT_TAG=${GITHUB_REF#refs/tags/}
+        
+        echo "## Changes in $CURRENT_TAG" > CHANGELOG.md
+        echo "" >> CHANGELOG.md
+        
+        if [ -z "$PREV_TAG" ]; then
+          echo "Initial release" >> CHANGELOG.md
+        else
+          echo "### Commits since $PREV_TAG:" >> CHANGELOG.md
+          echo "" >> CHANGELOG.md
+          git log $PREV_TAG..$CURRENT_TAG --pretty=format:"- %s (%h)" --no-merges >> CHANGELOG.md
+        fi
+        
+        echo "" >> CHANGELOG.md
+        echo "---" >> CHANGELOG.md
+        echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...$CURRENT_TAG" >> CHANGELOG.md
+        
+        # Save for GitHub release
+        cat CHANGELOG.md
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        cat CHANGELOG.md >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        body: ${{ steps.changelog.outputs.changelog }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Publish to NPM
       run: npm publish --access public
