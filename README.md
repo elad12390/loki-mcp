@@ -98,6 +98,12 @@ Set the following environment variables:
 
 ## Development
 
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed information about:
+- 🛠️ Development setup
+- 🧪 Testing and CI/CD
+- 📦 Releasing new versions
+- 🚀 Deployment process
+
 ```bash
 npm install
 npm run build
