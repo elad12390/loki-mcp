@@ -4,7 +4,7 @@ import { handleSearchLogs } from "./search-logs.js";
 // This is a wrapper around searchLogs with specific defaults for "tailing"
 export const tailLogsTool: Tool = {
   name: "loki_tail_logs",
-  description: "📡 See what's happening RIGHT NOW! Perfect for that 'I just deployed, is it working?' moment. Shows the freshest logs (last 5 minutes) so you can monitor your app in real-time. Great for: watching deployments, debugging live issues, or just checking the pulse of your system. No need to SSH into servers!",
+  description: "📡 Use when user asks: 'tail logs', 'recent logs', 'latest logs', 'what's happening now', 'live logs', 'current activity', 'just deployed', or 'is it working'. Shows ONLY the last 5 minutes of logs - perfect for real-time monitoring. Use this instead of search_logs when user wants to see what's happening RIGHT NOW, not historical data.",
   inputSchema: {
     type: "object",
     properties: {

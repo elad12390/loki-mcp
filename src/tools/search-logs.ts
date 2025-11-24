@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const searchLogsTool: Tool = {
   name: "loki_search_logs",
-  description: "🔍 Your go-to tool for finding logs! Just tell me what you're looking for and I'll search across all your services. No need to know LogQL - I handle all the complexity. Perfect for: finding error messages, tracking down specific requests, or browsing recent activity. Works beautifully with partial text matches and supports pagination for large result sets.",
+  description: "🔍 THE PRIMARY LOG SEARCH TOOL - Use this when the user asks to: 'check logs', 'look at logs', 'search logs', 'find in loki', 'check loki', 'what happened', 'show me errors', 'find error messages', 'search for X', or 'look for Y in logs'. Works across ALL services automatically (no labels needed) or can filter by specific app/service. Handles partial text matches, error messages, trace IDs, user IDs, anything! This is your first choice for any log investigation. Supports pagination for large result sets.",
   inputSchema: {
     type: "object",
     properties: {

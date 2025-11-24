@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const listServicesTool: Tool = {
   name: "loki_list_services",
-  description: "🏢 Quick inventory! Show me all the services/apps that are currently logging. I'll automatically find the right label (service_name, app, etc.) and list everything. Perfect for: getting the lay of the land, finding the right service name to filter by, or seeing what's actually deployed and running.",
+  description: "🏢 USE THIS FIRST when user asks: 'what services are logging', 'list services', 'what apps do we have', 'show me all services', 'what's in loki', 'what services exist', or 'which services are running'. Automatically discovers and lists all services/apps/applications that are currently logging. Essential starting point for log investigation - helps you know what to search for!",
   inputSchema: {
     type: "object",
     properties: {

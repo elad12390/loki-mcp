@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const getContextTool: Tool = {
   name: "loki_get_context",
-  description: "🔎 The detective's best friend! Found an error? Let me show you what led up to it and what happened after. This is THE tool for root cause analysis - errors rarely happen in isolation. See the full story: the requests that came before, the state of the system, and the cascading effects. Essential for understanding 'why did this happen?'",
+  description: "🔎 Use when user asks: 'what happened before this error', 'show context', 'surrounding logs', 'what led to this', 'logs around timestamp', or after finding a specific error in search results. Shows logs BEFORE and AFTER a specific log entry. CRITICAL for root cause analysis - errors don't happen in isolation! Use this as a follow-up after finding an interesting error with search_logs.",
   inputSchema: {
     type: "object",
     properties: {
