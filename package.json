@@ -9,6 +9,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc && chmod +x dist/index.js",
+    "test": "tsc --noEmit",
+    "lint": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
   "files": [
