@@ -62,8 +62,24 @@ export async function handleSearchLogs(args: any) {
   const MAX_LOG_LENGTH = 60000; // Limit total output to ~60k characters (roughly 15k tokens)
   const MAX_LINE_LENGTH = 1000; // Limit single line to 1000 chars
 
+  // Track unique sources (pods/containers) in results
+  const sources = new Map<string, number>();
+  for (const l of logs) {
+    const source = l.labels?.k8s_pod_name || l.labels?.pod || l.labels?.instance || l.labels?.service_name || 'unknown';
+    sources.set(source, (sources.get(source) || 0) + 1);
+  }
+
   let formattedLogs = "";
-  let currentLength = 0;
+  
+  // Add summary header if logs come from multiple sources
+  if (sources.size > 1) {
+    formattedLogs = `**Sources (${sources.size} pods):** ${Array.from(sources.entries()).map(([s, c]) => `${s} (${c})`).join(', ')}\n\n`;
+  } else if (sources.size === 1) {
+    const [source, count] = Array.from(sources.entries())[0];
+    formattedLogs = `**Source:** ${source} (${count} logs)\n\n`;
+  }
+
+  let currentLength = formattedLogs.length;
   let truncated = false;
   
   // Track the oldest timestamp seen to provide a next page cursor

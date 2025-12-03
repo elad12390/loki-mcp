@@ -137,7 +137,8 @@ export class LokiClient {
       const result = res.data.data.result;
 
       if (resultType === 'streams') {
-        return result.flatMap((stream: any) => {
+        // Flatten all streams into a single array
+        const allLogs = result.flatMap((stream: any) => {
           const labels = stream.stream;
           return stream.values.map((v: any) => ({
             ts: v[0],
@@ -145,6 +146,21 @@ export class LokiClient {
             labels
           }));
         });
+        
+        // Sort by timestamp (descending for BACKWARD, ascending for FORWARD)
+        // This ensures logs from different pods are interleaved by time
+        allLogs.sort((a: any, b: any) => {
+          const tsA = BigInt(a.ts);
+          const tsB = BigInt(b.ts);
+          if (direction === "BACKWARD") {
+            return tsB > tsA ? 1 : tsB < tsA ? -1 : 0;
+          } else {
+            return tsA > tsB ? 1 : tsA < tsB ? -1 : 0;
+          }
+        });
+        
+        // Apply limit after sorting to get the most relevant logs across all pods
+        return allLogs.slice(0, limit);
       }
       return result;
     } catch (error: any) {
