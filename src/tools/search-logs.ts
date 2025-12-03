@@ -102,6 +102,29 @@ export async function handleSearchLogs(args: any) {
       formattedLogs += `\n\n---\nTo get older logs, run the command again with end_time="${oldestTimestamp}"`;
   }
 
+  // Auto-suggest get_context when we find interesting logs
+  if (logs.length > 0 && logs.length <= 10) {
+    // Few results - likely found a specific error, suggest getting context
+    const firstLog = logs[0];
+    formattedLogs += `\n\n**Tip:** To see what happened before/after these logs, use \`loki_get_context\` with timestamp="${firstLog.ts}" and labels=${JSON.stringify(firstLog.labels)}`;
+  } else if (logs.length > 0) {
+    // Check if any logs contain error-like content
+    const hasErrors = logs.some((l: any) => {
+      const content = typeof l.line === 'string' ? l.line.toLowerCase() : JSON.stringify(l.line).toLowerCase();
+      return content.includes('error') || content.includes('exception') || content.includes('failed') || content.includes('fatal');
+    });
+    
+    if (hasErrors) {
+      const errorLog = logs.find((l: any) => {
+        const content = typeof l.line === 'string' ? l.line.toLowerCase() : JSON.stringify(l.line).toLowerCase();
+        return content.includes('error') || content.includes('exception') || content.includes('failed') || content.includes('fatal');
+      });
+      if (errorLog) {
+        formattedLogs += `\n\n**Tip:** Found error logs. To investigate root cause, use \`loki_get_context\` with timestamp="${errorLog.ts}" and labels=${JSON.stringify(errorLog.labels)}`;
+      }
+    }
+  }
+
   return {
     content: [{ type: "text", text: formattedLogs || "No logs found matching criteria." }],
   };
