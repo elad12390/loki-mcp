@@ -29,6 +29,31 @@ function tryParseJson(str: string): any {
     }
 }
 
+// Parse timestamp to nanoseconds - handles ISO strings, ns strings, or numbers
+function parseTimestampToNs(ts: string | number): number {
+    if (typeof ts === 'number') {
+        return ts;
+    }
+    
+    // If it's already nanoseconds (large number as string)
+    if (/^\d{19}$/.test(ts)) {
+        return parseInt(ts);
+    }
+    
+    // If it's milliseconds (13 digits)
+    if (/^\d{13}$/.test(ts)) {
+        return parseInt(ts) * 1e6;
+    }
+    
+    // Try parsing as ISO date string
+    const date = new Date(ts);
+    if (!isNaN(date.getTime())) {
+        return date.getTime() * 1e6; // Convert ms to ns
+    }
+    
+    throw new Error(`Invalid timestamp format: ${ts}. Use ISO format (e.g. '2024-12-03T06:27:00Z') or nanoseconds.`);
+}
+
 export class LokiClient {
   private client: any; // Using any to avoid axios type issues for now, or could fix types
 
@@ -41,6 +66,7 @@ export class LokiClient {
 
     this.client = axios.create({
       baseURL: config.lokiUrl,
+      timeout: 30000, // 30 seconds timeout
       headers,
     });
   }
@@ -60,6 +86,7 @@ export class LokiClient {
   async getDefaultSelector(): Promise<string> {
     if (this.cachedDefaultSelector) return this.cachedDefaultSelector;
 
+    console.error("Auto-detecting default log selector...");
     try {
       const labels = await this.getLabels();
       // Common high-cardinality/service-identifying labels
@@ -68,6 +95,7 @@ export class LokiClient {
       for (const p of priorities) {
         if (labels.includes(p)) {
           this.cachedDefaultSelector = `{${p}=~".+"}`;
+          console.error(`Detected default selector: ${this.cachedDefaultSelector}`);
           return this.cachedDefaultSelector;
         }
       }
@@ -75,6 +103,7 @@ export class LokiClient {
       // Fallback: pick the first available label if any exist
       if (labels && labels.length > 0) {
          this.cachedDefaultSelector = `{${labels[0]}=~".+"}`;
+         console.error(`Detected default selector (fallback): ${this.cachedDefaultSelector}`);
          return this.cachedDefaultSelector;
       }
     } catch (e) {
@@ -82,8 +111,23 @@ export class LokiClient {
     }
     
     // Ultimate fallback
+    console.error("Using ultimate fallback selector: {job=~\".+\"}");
     return '{job=~".+"}';
   }
+
+  // Infrastructure/internal services to exclude by default
+  // These log your queries back, causing false matches
+  private readonly EXCLUDED_INFRA_PATTERNS = [
+    'loki',           // loki-read, loki-write, loki-gateway
+    'promtail',       // log shipper
+    'fluent',         // fluentd, fluent-bit
+    'vector',         // vector log collector
+    'grafana',        // grafana dashboards
+    'prometheus',     // metrics
+    'mimir',          // metrics backend
+    'tempo',          // tracing backend
+    'otel',           // opentelemetry collector
+  ];
 
   async searchLogs(params: {
     selector?: Record<string, string>;
@@ -93,41 +137,63 @@ export class LokiClient {
     start?: string; // Optional start timestamp (ns) override
     end?: string; // Optional end timestamp (ns) for pagination
     direction?: "BACKWARD" | "FORWARD";
+    includeInfrastructure?: boolean; // Include infra logs (loki, promtail, etc.)
   }) {
-    const { selector = {}, search, limit = 100, startAgo = "1h", end, direction = "BACKWARD", start } = params;
+    const { selector = {}, search, limit = 100, startAgo = "1h", end, direction = "BACKWARD", start, includeInfrastructure = false } = params;
 
     let queryPart = "";
+    const excludePattern = this.EXCLUDED_INFRA_PATTERNS.join('|');
+    
     if (Object.keys(selector).length > 0) {
       const selectorParts = Object.entries(selector).map(([k, v]) => `${k}="${v}"`);
       queryPart = `{${selectorParts.join(", ")}}`;
     } else {
-      queryPart = await this.getDefaultSelector();
+      // No selector provided - search all logs but exclude infrastructure
+      // We ALWAYS start with a default selector (anchor) to avoid "select all streams" (which causes timeouts)
+      const baseSelector = await this.getDefaultSelector();
+      
+      if (!includeInfrastructure) {
+        // Inject the exclusion filter into the base selector
+        // e.g. {app=~".+"} -> {app=~".+", k8s_container_name!~"..."}
+        // We use the slice to remove the closing brace '}'
+        queryPart = `${baseSelector.slice(0, -1)}, k8s_container_name!~"(?i).*(${excludePattern}).*"}`;
+      } else {
+        queryPart = baseSelector;
+      }
     }
 
     let query = queryPart;
+    
     if (search) {
       query += ` |= "${search}"`;
     }
 
     const now = Date.now() * 1e6; // ms to ns
-    let startNs = now - parseDurationToNs(startAgo);
+    let startNs: number;
+    let endNs: number | undefined;
     
-    // Explicit start overrides startAgo
+    // Handle start time
     if (start) {
-        startNs = parseInt(start);
+        // Explicit start time provided (ISO or ns)
+        startNs = parseTimestampToNs(start);
+    } else {
+        // Use time_window from now
+        startNs = now - parseDurationToNs(startAgo);
     }
     
-    // If 'end' is provided, use it. Otherwise, default to 'now' (implicit in Loki if omitted, but we can be explicit if we want)
-    // We don't default end to now here because we want to pass it through if provided
+    // Handle end time
+    if (end) {
+        endNs = parseTimestampToNs(end);
+    }
     
-    console.error(`Executing LogQL: ${query}`);
+    console.error(`Executing LogQL: ${query} (start: ${new Date(startNs / 1e6).toISOString()}, end: ${endNs ? new Date(endNs / 1e6).toISOString() : 'now'})`);
 
     try {
       const res = await this.client.get('/loki/api/v1/query_range', {
         params: {
           query,
           start: startNs,
-          end: end, // Axios filters undefined values automatically
+          end: endNs, // Axios filters undefined values automatically
           limit,
           direction
         }

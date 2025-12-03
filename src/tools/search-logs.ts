@@ -23,16 +23,23 @@ export const searchLogsTool: Tool = {
       },
       time_window: { 
         type: "string", 
-        description: "How far back to search. Examples: '1h', '30m', '1d'. You can also use '6h' to mean 'last 6 hours'. Default: '1h'",
-        // Removed strict pattern to allow more flexible input that the client now handles
+        description: "How far back to search FROM NOW. Examples: '1h', '30m', '1d'. Ignored if start_time is provided. Default: '1h'",
+      },
+      start_time: {
+        type: "string",
+        description: "Search logs AFTER this time. ISO format (e.g. '2024-12-03T06:27:00Z') or nanoseconds. Use with end_time for a specific time range."
+      },
+      end_time: {
+        type: "string",
+        description: "Search logs BEFORE this time. ISO format (e.g. '2024-12-03T06:48:00Z') or nanoseconds. Defaults to now."
       },
       limit: { 
         type: "number", 
         description: "Max number of log lines to return. Default: 100" 
       },
-      end_time: {
-        type: "string",
-        description: "Optional timestamp (nanoseconds or ISO) to search before. Use this for pagination to get older logs."
+      include_infrastructure: {
+        type: "boolean",
+        description: "Include infrastructure logs (loki, promtail, grafana, prometheus, etc.). Default: false. These are excluded by default because they echo search terms back in their logs, causing false matches."
       }
     },
     required: ["reasoning"],
@@ -45,8 +52,10 @@ export async function handleSearchLogs(args: any) {
     labels?: Record<string, string>;
     search_term?: string;
     time_window?: string;
-    limit?: number;
+    start_time?: string;
     end_time?: string;
+    limit?: number;
+    include_infrastructure?: boolean;
   };
 
   metrics.trackToolUsage(searchLogsTool.name, params.reasoning);
@@ -55,8 +64,10 @@ export async function handleSearchLogs(args: any) {
     selector: params.labels,
     search: params.search_term,
     startAgo: params.time_window,
+    start: params.start_time,
+    end: params.end_time,
     limit: params.limit,
-    end: params.end_time
+    includeInfrastructure: params.include_infrastructure
   });
 
   const MAX_LOG_LENGTH = 60000; // Limit total output to ~60k characters (roughly 15k tokens)
