@@ -4,7 +4,7 @@ import { metrics } from "../lib/metrics.js";
 
 export const searchLogsTool: Tool = {
   name: "loki_search_logs",
-  description: "🔍 THE PRIMARY LOG SEARCH TOOL - Use this when the user asks to: 'check logs', 'look at logs', 'search logs', 'find in loki', 'check loki', 'what happened', 'show me errors', 'find error messages', 'search for X', or 'look for Y in logs'. Works across ALL services automatically (no labels needed) or can filter by specific app/service. Handles partial text matches, error messages, trace IDs, user IDs, anything! This is your first choice for any log investigation. Supports pagination for large result sets.",
+  description: "🔍 THE PRIMARY LOG SEARCH TOOL - Use this when the user asks to: 'check logs', 'look at logs', 'search logs', 'find in loki', 'check loki', 'what happened', 'show me errors', 'find error messages', 'search for X', 'look for Y in logs', 'how many errors', 'count errors', 'error rate', or 'error trend'. Works across ALL services automatically (no labels needed) or can filter by specific app/service. Handles partial text matches, error messages, trace IDs, user IDs, anything! Set count=true to get error counts and trends instead of log lines.",
   inputSchema: {
     type: "object",
     properties: {
@@ -19,7 +19,7 @@ export const searchLogsTool: Tool = {
       },
       search_term: { 
         type: "string", 
-        description: "Text to search for (e.g. error message, trace ID). The tool will automatically search across all services if no labels are provided." 
+        description: "Text to search for (e.g. error message, trace ID). Defaults to 'error' when count=true." 
       },
       time_window: { 
         type: "string", 
@@ -39,12 +39,86 @@ export const searchLogsTool: Tool = {
       },
       include_infrastructure: {
         type: "boolean",
-        description: "Include infrastructure logs (loki, promtail, grafana, prometheus, etc.). Default: false. These are excluded by default because they echo search terms back in their logs, causing false matches."
+        description: "Include infrastructure logs (loki, promtail, grafana, prometheus, etc.). Default: false."
+      },
+      count: {
+        type: "boolean",
+        description: "When true, returns COUNT and TREND of matching logs over time instead of log lines. Shows total count, peak rate, and ASCII chart. Perfect for 'how many errors?' questions."
+      },
+      step: {
+        type: "string",
+        description: "Interval for count aggregation (only used when count=true). Examples: '1m', '5m', '15m'. Default: '1m'"
       }
     },
     required: ["reasoning"],
   },
 };
+
+// Helper function for count mode
+async function handleCountMode(params: {
+  labels?: Record<string, string>;
+  search_term?: string;
+  time_window?: string;
+  step?: string;
+}) {
+  // Build LogQL metric query
+  const selectorParts = Object.entries(params.labels || {}).map(([k, v]) => `${k}="${v}"`);
+  const selector = selectorParts.length > 0 ? `{${selectorParts.join(", ")}}` : '{job=~".+"}';
+  
+  const search = params.search_term || "error";
+  const range = params.step || "1m";
+  
+  // Use sum(...) to aggregate across all streams (e.g. all pods of the app)
+  const query = `sum(count_over_time(${selector} |~ "(?i)${search}" [${range}]))`;
+  
+  const results = await lokiClient.queryMetric(
+    query,
+    params.time_window || "1h",
+    params.step || "1m"
+  );
+
+  if (!results || results.length === 0) {
+    return {
+      content: [{ type: "text", text: "No data found." }],
+    };
+  }
+
+  const series = results[0]; // We expect one series due to sum()
+  const values = series.values;
+  
+  if (values.length === 0) {
+    return {
+      content: [{ type: "text", text: `No occurrences of '${search}' found in this time range.` }],
+    };
+  }
+
+  // Calculate stats
+  let total = 0;
+  let max = 0;
+  for (const v of values) {
+    total += v.value;
+    if (v.value > max) max = v.value;
+  }
+
+  let output = `Found ${total} occurrences of '${search}' in the last ${params.time_window || '1h'}.\n\n`;
+  output += `Peak rate: ${max} per ${params.step || '1m'}.\n\n`;
+  output += "Time Series:\n";
+
+  // Downsample for display if too many points
+  const displayPoints = values.length > 20 ? 
+    values.filter((_: any, i: number) => i % Math.ceil(values.length / 20) === 0) : 
+    values;
+
+  for (const v of displayPoints) {
+    const date = new Date(v.ts * 1000).toISOString().substring(11, 19); // HH:mm:ss
+    const bar = max > 0 ? "█".repeat(Math.ceil((v.value / max) * 10)) : "";
+    output += `${date} | ${v.value.toString().padEnd(4)} ${bar}\n`;
+  }
+
+  return {
+    content: [{ type: "text", text: output }],
+  };
+}
 
 export async function handleSearchLogs(args: any) {
   const params = args as {
@@ -56,9 +130,16 @@ export async function handleSearchLogs(args: any) {
     end_time?: string;
     limit?: number;
     include_infrastructure?: boolean;
+    count?: boolean;
+    step?: string;
   };
 
   metrics.trackToolUsage(searchLogsTool.name, params.reasoning);
+
+  // COUNT MODE: Return aggregated counts over time
+  if (params.count) {
+    return handleCountMode(params);
+  }
 
   const logs = await lokiClient.searchLogs({
     selector: params.labels,
