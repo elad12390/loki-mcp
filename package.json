@@ -35,7 +35,7 @@
     "url": "git+https://github.com/elad12390/loki-mcp.git"
   },
   "publishConfig": {
-    "access": "public"
+    "registry": "https://npm.pkg.github.com"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.1",
